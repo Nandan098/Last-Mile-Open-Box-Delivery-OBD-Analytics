@@ -41,17 +41,11 @@ Fraud_Detection_Engine AS (
         CASE WHEN Distance_Variance_Pct > 15.0 THEN 1 ELSE 0 END AS Flag_Distance_Tampering,
         
         CASE WHEN Order_Value_INR > 15000 AND OBD_Status = 'Refused' AND Customer_Claim_Filed = 'Yes' THEN 1 ELSE 0 END AS Flag_High_Value_Leakage,
-    
-        CASE WHEN Prev_Timestamp IS NOT NULL 
-              AND TIMESTAMPDIFF(MINUTE, Prev_Timestamp, Log_Timestamp) <= 5 
-              AND ABS(GPS_Distance_KM - Prev_GPS_Distance) > 10 
-             THEN 1 ELSE 0 END AS Flag_GPS_Spoofing
-    FROM Temporal_Tracking
 ),
 Risk_Aggregation AS (
     SELECT 
         *,
-        (Flag_Distance_Tampering + (Flag_High_Value_Leakage * 2) + (Flag_GPS_Spoofing * 3)) AS Total_Risk_Score
+        (Flag_Distance_Tampering + (Flag_High_Value_Leakage * 2)) AS Total_Risk_Score
     FROM Fraud_Detection_Engine
 )
 SELECT 
@@ -62,7 +56,6 @@ SELECT
     Distance_Variance_Pct,
     Flag_Distance_Tampering,
     Flag_High_Value_Leakage,
-    Flag_GPS_Spoofing,
     Total_Risk_Score,
     CASE 
         WHEN Total_Risk_Score >= 3 THEN 'Critical Risk (Spoofing/High Value)'
